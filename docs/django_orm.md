@@ -3,13 +3,93 @@
 ### orders/models.py
 ```python
 from django.db import models
+import uuid
+
+class Customer(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+
+class DeliveryInfo(models.Model):
+    """One-to-One relationship: each order has one delivery info record."""
+    address = models.CharField(max_length=255)
+    delivery_date = models.DateField(null=True, blank=True)
+
+class Tag(models.Model):
+    """Represents a tag that can be assigned to many orders."""
+    name = models.CharField(max_length=50, unique=True)
+
 
 class Order(models.Model):
-    """Simple order model for ORM practice."""
-    title = models.CharField(max_length=200)
-    amount = models.DecimalField(max_digits=8, decimal_places=2)
-    is_paid = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Order model showcasing most common Django field types."""
+    # --- Strings / Text ---
+    title = models.CharField(max_length=200)                        # short text
+    description = models.TextField(null=True, blank=True)           # long text
+    slug = models.SlugField(max_length=200, unique=True)            # SEO slug
+    code = models.CharField(max_length=32, db_index=True)           # arbitrary code
+
+    # --- Numbers ---
+    amount = models.DecimalField(max_digits=8, decimal_places=2)    # precise money
+    quantity = models.PositiveIntegerField(default=1)               # non-negative int
+    ratio = models.FloatField(null=True, blank=True)                # float (approx.)
+
+    # --- Booleans ---
+    is_paid = models.BooleanField(default=False)                    # boolean flag
+
+    # --- Dates / Times ---
+    created_at = models.DateTimeField(auto_now_add=True)            # set on create
+    updated_at = models.DateTimeField(auto_now=True)                # auto update
+    due_date = models.DateField(null=True, blank=True)              # date only
+    duration = models.DurationField(null=True, blank=True)          # time delta
+
+    # --- IDs / Structured ---
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)  # UUID pk alt
+    metadata = models.JSONField(default=dict, blank=True)           # structured JSON
+    ip_address = models.GenericIPAddressField(null=True, blank=True) # IPv4/IPv6
+
+    # --- Files / Media (Pillow needed for ImageField) ---
+    attachment = models.FileField(upload_to="orders/", null=True, blank=True) # file
+    image = models.ImageField(upload_to="orders/", null=True, blank=True)     # image
+
+    # --- Choices (enums) ---
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        PROCESSING = "proc", "Processing"
+        DONE = "done", "Done"
+
+    status = models.CharField(
+        max_length=5, choices=Status.choices, default=Status.NEW
+    )  # enum-like field
+
+    # --- Relations ---
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="orders",
+    )  # FK: many orders per user
+    """
+    CASCADE — deletes related objects.
+    PROTECT — prohibits deletion of a parent if there are children (throws ProtectedError).
+    RESTRICT — Similarly prohibits, but without reverse deletion; closer to SQL RESTRICT.
+    SET_NULL — sets NULL in FK (null=True is required).
+    SET_DEFAULT — sets the default value (you need default=...).
+    DO_NOTHING — does nothing (may compromise integrity, use with CAUTION!!!).
+    """
+
+    delivery_info = models.OneToOneField(
+        DeliveryInfo,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="order",
+    )  # 1:1 extra payload
+
+    tags = models.ManyToManyField(
+        Tag, related_name="orders", blank=True
+    )  # M2M: flexible labels
+
+    def __str__(self) -> str:
+        """String representation."""
+        return f"{self.title} ({self.amount})"
 ```
 
 ```bash
@@ -66,6 +146,7 @@ Order.objects.values("is_paid").annotate(total=Count("id"))
 ```
 
 ### Lookup expressions (filters with suffixes)
+### They are return QuerySet, like iterators, they will not be executed immediately.
 ```python
 from orders.models import Order
 # contains / icontains — search by substring
@@ -76,67 +157,6 @@ Order.objects.filter(delivery_info__isnull=False)
 ```
 
 ### Connections
-```python
-from django.db import models
-class Customer(models.Model):
-    name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-
-class DeliveryInfo(models.Model):
-    """One-to-One relationship: each order has one delivery info record."""
-    address = models.CharField(max_length=255)
-    delivery_date = models.DateField(null=True, blank=True)
-
-class Tag(models.Model):
-    """Represents a tag that can be assigned to many orders."""
-    name = models.CharField(max_length=50, unique=True)
-
-class Order(models.Model):
-    """Simple order model for ORM practice."""
-    # One-to-Many
-    customer = models.ForeignKey(
-        Customer,
-        on_delete=models.CASCADE,
-        related_name="orders",
-        null=True,
-        blank=True,
-    )
-    """
-    CASCADE — deletes related objects.
-    PROTECT — prohibits deletion of a parent if there are children (throws ProtectedError).
-    RESTRICT — Similarly prohibits, but without reverse deletion; closer to SQL RESTRICT.
-    SET_NULL — sets NULL in FK (null=True is required).
-    SET_DEFAULT — sets the default value (you need default=...).
-    DO_NOTHING — does nothing (may compromise integrity, use with CAUTION!!!).
-    """
-
-    # One-to-One
-    delivery_info = models.OneToOneField(
-        DeliveryInfo,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="order",
-    )
-
-    # Many-to-Many
-    tags = models.ManyToManyField(
-        Tag,
-        related_name="orders",
-        blank=True,
-    )
-    title = models.CharField(max_length=200)
-    amount = models.DecimalField(max_digits=8, decimal_places=2)
-    is_paid = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-```
-
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
 ```python
 from orders.models import Customer, Order
 c = Customer.objects.create(name="Grisha")
