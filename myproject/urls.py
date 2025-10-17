@@ -17,7 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from orders.views import orders_list, order_detail
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('orders.urls')),  # mount app API
+    path("orders/", orders_list, name="orders"),  # SSR pages
+    path("orders/<int:pk>/", order_detail, name="order_detail"),
 ]

@@ -1,0 +1,34 @@
+<!-- templates/orders/list.html -->
+<!doctype html>
+<html>
+  <body>
+    <h1>Orders</h1>
+
+    {% with orders=data.results|default:data %}
+    <table>
+      <thead>
+        <tr><th>#</th><th>Customer</th><th>Status</th><th>Amount</th><th>Created</th></tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><a href="{% url 'order_detail' o.id %}">{{ o.number }}</a></td>
+          <td>{{ o.customer }}</td>
+          <td>{{ o.status }}</td>
+          <td>{{ o.amount }}</td>
+          <td>{{ o.created_at }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No orders.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {# DRF PageNumberPagination: previous/next — это уже URL-ы #}
+    <p>
+      {% if data.previous %}<a href="{{ data.previous }}">Prev</a>{% endif %}
+      {% if data.next %}<a href="{{ data.next }}">Next</a>{% endif %}
+    </p>
+    {% endwith %}
+  </body>
+</html>

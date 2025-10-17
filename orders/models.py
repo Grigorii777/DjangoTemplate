@@ -12,7 +12,8 @@ class Task(models.Model):
 
 class Customer(models.Model):
     name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
+    def __str__(self) -> str:  # type hint for IDE
+        return self.name
 
 
 class DeliveryInfo(models.Model):
@@ -64,3 +65,7 @@ class Order(models.Model):
     amount = models.DecimalField(max_digits=8, decimal_places=2)
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:  # type hint for IDE
+        return self.title
+

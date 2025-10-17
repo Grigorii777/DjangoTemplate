@@ -27,6 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+API_URL = "http://127.0.0.1:8000/api"
+API_TIMEOUT = 5  # seconds
+
 
 # Application definition
 

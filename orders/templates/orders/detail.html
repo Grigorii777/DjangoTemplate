@@ -1,0 +1,14 @@
+<!-- templates/orders/detail.html -->
+<!doctype html>
+<html>
+  <body>
+    <h1>Order {{ order.number }}</h1>
+    <ul>
+      <li>Customer: {{ order.customer }}</li>
+      <li>Status: {{ order.status }}</li>
+      <li>Amount: {{ order.amount }}</li>
+      <li>Created: {{ order.created_at }}</li>
+    </ul>
+    <p><a href="{% url 'orders' %}">Back</a></p>
+  </body>
+</html>
